@@ -4,6 +4,9 @@
 #include <mpi.h>
 #include "pixel.h"
 
+extern pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pixel *leftRow, pixel *rightRow, const size_t LENGTH, const int rank);
+extern void freeOutArray(pixel *pointer);
+
 
 // IBM POWER9 System clock with 512MHZ resolution.
 unsigned long long aimos_clock_read(void)
@@ -82,18 +85,18 @@ int main(int argc, char* argv[])
     MPI_Request requests[4];
     int request_count = 0;
     
-    pixel *prev_array_upper = malloc(sizeof(pixel) * pixelsPerProc);
-    pixel *next_array_lower = malloc(sizeof(pixel) * pixelsPerProc);
+    pixel *leftRow = malloc(sizeof(pixel) * pixelsPerProc);
+    pixel *RightRow = malloc(sizeof(pixel) * pixelsPerProc);
     if(rank == 0)
     {
         for(int i = 0; i < pixelsPerProc; ++i)
         {
             //set it to black for now
-            prev_array_upper->red = 0;
-            prev_array_upper->green = 0;
-            prev_array_upper->blue = 0;
+            leftRow->red = 0;
+            leftRow->green = 0;
+            leftRow->blue = 0;
         }
-        MPI_Irecv(next_array_lower, pixelsPerProc, MPI_INT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Irecv(RightRow, pixelsPerProc, MPI_INT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
         MPI_Isend(myPixels, pixelsPerProc, MPI_INT, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
     }
     else if(rank == nprocs - 1)
@@ -101,29 +104,37 @@ int main(int argc, char* argv[])
         for(int i = 0; i < pixelsPerProc; ++i)
         {
             //set it to black for now
-            next_array_lower->red = 0;
-            next_array_lower->green = 0;
-            next_array_lower->blue = 0;
+            RightRow->red = 0;
+            RightRow->green = 0;
+            RightRow->blue = 0;
         }
-        MPI_Irecv(prev_array_upper, pixelsPerProc, MPI_INT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Irecv(leftRow, pixelsPerProc, MPI_INT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
         MPI_Isend(myPixels, pixelsPerProc, MPI_INT, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
     }
     else {
-        MPI_Irecv(prev_array_upper, pixelsPerProc, MPI_INT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-        MPI_Irecv(next_array_lower, pixelsPerProc, MPI_INT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Irecv(leftRow, pixelsPerProc, MPI_INT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
+        MPI_Irecv(RightRow, pixelsPerProc, MPI_INT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
         MPI_Isend(myPixels, pixelsPerProc, MPI_INT, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
         MPI_Isend(myPixels, pixelsPerProc, MPI_INT, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
     }
 
     MPI_Waitall(request_count, requests, MPI_STATUSES_IGNORE);
 
-    //CUDA CALL HERE
+    //Run Cuda function (run Sobel on all pixels)
+    pixel *out = runSobelOnPixels(LENGTH, myPixels, leftRow, RightRow, LENGTH, rank);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
+    //WRITE BACK INTO DATA FILE
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    //REPORT TELEMETRY
+
+    freeOutArray(out);
     free(myPixels);
-    free(prev_array_upper);
-    free(next_array_lower);
+    free(leftRow);
+    free(RightRow);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
