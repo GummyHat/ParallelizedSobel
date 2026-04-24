@@ -79,6 +79,15 @@ int main(int argc, char* argv[])
         pixelsInProc->blue = pixelBuffer[2];
     }
     MPI_File_close(&fh);
+    free(pixelBuffer);
     MPI_Barrier(MPI_COMM_WORLD);
+
+
+    //CUDA CALLS HERE
+
+    free(pixelsInProc);
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
+    return 0;
 
 }
