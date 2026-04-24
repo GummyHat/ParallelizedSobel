@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <mpi.h>
+#include "pixel.h"
 
 
 // IBM POWER9 System clock with 512MHZ resolution.
@@ -17,12 +18,6 @@ unsigned long long aimos_clock_read(void)
 
   return (((unsigned long long)tbu0) << 32) | tbl;
 }
-
-typedef struct {
-    unsigned char red;
-    unsigned char green;
-    unsigned char blue;
-} pixel;
 
 int main(int argc, char* argv[])
 {
