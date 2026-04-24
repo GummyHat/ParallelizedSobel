@@ -3,7 +3,6 @@
 #include <unistd.h>
 #include <mpi.h>
 
-#define BLOCKS 32
 
 // IBM POWER9 System clock with 512MHZ resolution.
 unsigned long long aimos_clock_read(void)
