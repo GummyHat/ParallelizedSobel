@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <mpi.h>
+#include <string.h>
 #include "pixel.h"
 
 extern pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pixel *leftRow, pixel *rightRow, const size_t LENGTH, const int rank);
@@ -36,7 +37,7 @@ int main(int argc, char* argv[])
     const int GRAYBOOL = atoi(argv[3]);
 
     int rank, nprocs;
-    MPI_File fh;
+    MPI_File fh, ofh;
     MPI_Status status;
 
     const unsigned long long FileSizeBytes = LENGTH * WIDTH * 8;
@@ -71,7 +72,7 @@ int main(int argc, char* argv[])
     for(int i = 0; i < pixelsPerProc; ++i)
     {
         offset = (i * pixelsPerProc) * nprocs; 
-        MPI_File_read_at(fh, offset, pixelBuffer, 3, MPI_CHAR, &status);
+        MPI_File_read_at(fh, offset, pixelBuffer, 3, MPI_UNSIGNED_CHAR, &status);
         myPixels->red = pixelBuffer[0];
         myPixels->green = pixelBuffer[1];
         myPixels->blue = pixelBuffer[2];
@@ -120,16 +121,25 @@ int main(int argc, char* argv[])
 
     MPI_Waitall(request_count, requests, MPI_STATUSES_IGNORE);
 
-    //Run Cuda function (run Sobel on all pixels)
+    //Run Cuda function (run Sobel on all pixels) //LENGTH is not a good value for this (will not work)
     pixel *out = runSobelOnPixels(LENGTH, myPixels, leftRow, RightRow, LENGTH, rank);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //WRITE BACK INTO DATA FILE
+    //Write output file
+    char *outputFilename = strcat(filename, "_out.data");
+    MPI_File_open(MPI_COMM_WORLD, outputFilename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &ofh);
+    for(int i = 0; i < pixelsPerProc; ++i) //Like above, the logic here is not so good I think. We need to fix this
+    {
+
+        offset = (i * pixelsPerProc) * nprocs; 
+        MPI_File_write_at(fh, offset, out, 3, MPI_UNSIGNED_CHAR, &status);
+    }
+    MPI_File_close(&ofh);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //REPORT TELEMETRY
+    //REPORT TELEMETRY HERE
 
     freeOutArray(out);
     free(myPixels);
