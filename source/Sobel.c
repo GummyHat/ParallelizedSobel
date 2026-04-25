@@ -196,11 +196,16 @@ int main(int argc, char* argv[])
         }
     }
 
+
     for(int i = 0; i < totalPixelCount; ++i)
     {
         if(i % HEIGHT == 0) printf("\n");
         printf("%.2lf ", allPixels[i]);
     }
+    printf("\n");
+
+    printf("%lf %lf %lf\n%lf %lf %lf\n%lf %lf %lf", pixelMesh[0].topLeft, pixelMesh[0].topMiddle, pixelMesh[0].topRight, 
+        pixelMesh[0].left, pixelMesh[0].current, pixelMesh[0].right, pixelMesh[0].bottomLeft, pixelMesh[0].bottomMiddle, pixelMesh[0].bottomRight);
 
 
     //This is how many pixels each process will recieve
