@@ -37,7 +37,7 @@ float* readToGrayscale(const char* filename, size_t totalPixelCount) {
 
     if (fread(raw, 1, totalPixelCount * 3, f) == (size_t)totalPixelCount * 3) {
         for (int i = 0; i < totalPixelCount; i++) {
-            result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]) / 255.0f;
+            result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]);
         }
     }
     free(raw);
