@@ -47,3 +47,5 @@ https://www.youtube.com/watch?v=uihBwtPIBxM
 -Ensure MPI send/recvs are working
 
 -Finishing writing Kernel
+
+-Modify Cuda functionality to account for grayscale. This was originally writted to accomodate for RGB
