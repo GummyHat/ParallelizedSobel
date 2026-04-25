@@ -90,46 +90,50 @@ int main(int argc, char* argv[])
         {
             if(i == 0)
             { //Top left
+                printf("Top Left\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
                 pixelMesh[i].left = GHOSTPIXELVALUE;
                 pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = allPixels[i + HEIGHT];
+                pixelMesh[i].right = allPixels[i + 1];
                 pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
                 pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
             }
             else if(i == HEIGHT - 1)
-            { //Bottom Left
+            { //Top Right
+                printf("Top Right\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].topMiddle = allPixels[i - 1];
-                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
+                pixelMesh[i].topRight = GHOSTPIXELVALUE;
+                pixelMesh[i].left = allPixels[i - 1];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
+            }
+            else if(i == totalPixelCount - HEIGHT)
+            { //Bottom Left
+                printf("Bottom Left\n");
+                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
+                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
                 pixelMesh[i].left = GHOSTPIXELVALUE;
                 pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = allPixels[i+HEIGHT];
+                pixelMesh[i].right = allPixels[i + 1];
                 pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].bottomMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
             }
-            else if(i == totalPixelCount - HEIGHT)
-            { //Top Right
-                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
-                pixelMesh[i].topRight = GHOSTPIXELVALUE;
-                pixelMesh[i].left = allPixels[i - HEIGHT];
-                pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + 1];
-                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
-            }
             else if(i == totalPixelCount - 1)
             { //Bottom Right
+                printf("Bottom Right\n");
                 pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
-                pixelMesh[i].topMiddle = allPixels[i - 1];
+                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
-                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = GHOSTPIXELVALUE;
                 pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
@@ -137,79 +141,72 @@ int main(int argc, char* argv[])
                 pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
             }
             else if(i < HEIGHT)
-            { //Left Side
-                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].topMiddle = allPixels[i - 1];
-                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
-                pixelMesh[i].left = GHOSTPIXELVALUE;
-                pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = allPixels[i + HEIGHT];
-                pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomMiddle = allPixels[i + 1];
-                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
-            }
-            else if(i < totalPixelCount && i > totalPixelCount - HEIGHT - 1)
-            { //Right Side
-                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
-                pixelMesh[i].topMiddle = allPixels[i - 1];
-                pixelMesh[i].topRight = GHOSTPIXELVALUE;
-                pixelMesh[i].left = allPixels[i - HEIGHT];
-                pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + 1];
-                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
-            }
-            else if (i % HEIGHT == 0)
-            { //Top
+            { //Top Side
+                printf("Top Side\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
-                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = allPixels[i + HEIGHT];
-                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].right = allPixels[i + 1];
+                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
                 pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
             }
-            else if(i % HEIGHT - 1 == 0)
+            else if(i < totalPixelCount && i > totalPixelCount - HEIGHT - 1)
             { //Bottom
+                printf("Bottom\n");
                 pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
-                pixelMesh[i].topMiddle = allPixels[i - 1];
-                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
-                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
+                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = allPixels[i + HEIGHT];
+                pixelMesh[i].right = allPixels[i + 1];
                 pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].bottomMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
             }
+            else if (i % HEIGHT == 0)
+            { //Left
+                printf("Left\n");
+                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
+                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].left = GHOSTPIXELVALUE;
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = allPixels[i + 1];
+                pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+            }
+            else if(i % HEIGHT == HEIGHT - 1)
+            { //Right
+                printf("Right\n");
+                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
+                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
+                pixelMesh[i].topRight = GHOSTPIXELVALUE;
+                pixelMesh[i].left = allPixels[i - 1];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
+            }
             else 
             {
+                printf("ELSE CASE\n");
                 pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
                 pixelMesh[i].topMiddle = allPixels[i - 1];
-                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
                 pixelMesh[i].left = allPixels[i - HEIGHT];
                 pixelMesh[i].current = allPixels[i];
-                pixelMesh[i].right = allPixels[i + HEIGHT];
-                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].right = allPixels[i + 1];
+                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
                 pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
             }
         }
     }
-
-
-    for(int i = 0; i < totalPixelCount; ++i)
-    {
-        if(i % HEIGHT == 0) printf("\n");
-        printf("%.2lf ", allPixels[i]);
-    }
-    printf("\n");
-
-    printf("%lf %lf %lf\n%lf %lf %lf\n%lf %lf %lf", pixelMesh[0].topLeft, pixelMesh[0].topMiddle, pixelMesh[0].topRight, 
-        pixelMesh[0].left, pixelMesh[0].current, pixelMesh[0].right, pixelMesh[0].bottomLeft, pixelMesh[0].bottomMiddle, pixelMesh[0].bottomRight);
-
 
     //This is how many pixels each process will recieve
     const size_t pixelsPerProc = (HEIGHT * WIDTH) / nprocs;
