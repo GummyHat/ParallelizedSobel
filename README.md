@@ -31,6 +31,9 @@ https://www.youtube.com/watch?v=uihBwtPIBxM
 ### TODO:
 
 -Currently, the number of MPI Ranks must be equal to the width of the image for logic to work. This must be resolved.
+
 -The output file is 1/3 the size of the input, which is perfect. But, each pixel of the output file is equal to the grayscale value of the first pixel of the input file.
+
 -Ensure MPI send/recvs are working
+
 -Finishing writing Kernel
