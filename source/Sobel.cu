@@ -21,7 +21,7 @@ void sobelKernal(const size_t pixelsToCalcPerThread, pixel *currRow, pixel *left
     int stride = blockDim.x * gridDim.x;
     for(int i = index; i < pixelsToCalcPerThread; i += stride)
     {
-        //Put Sobel Logic Here (Each pixel needs 3 Sobel calculations because there is RGB)
+        //Put Sobel Logic Here
     }
 }
 
