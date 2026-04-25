@@ -18,8 +18,8 @@ float* readToGrayscale(const char* filename, int w, int h) {
     unsigned char* raw = malloc(numPixels * 3);
     float* result = malloc(numPixels * sizeof(float));
 
-    if (fread(raw, 1, pixel_count * 3, f) == (size_t)pixel_count * 3) {
-        for (int i = 0; i < pixel_count; i++) {
+    if (fread(raw, 1, numPixels * 3, f) == (size_t)pixel_count * 3) {
+        for (int i = 0; i < numPixels; i++) {
             result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]) / 255.0f;
         }
     }
