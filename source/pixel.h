@@ -1,6 +1,8 @@
 #ifndef PIXEL_H
 #define PIXEL_H
 
+#include <stdio.h>
+
 //Each pixel is 3 bytes
 typedef struct {
     unsigned char red;
@@ -9,15 +11,15 @@ typedef struct {
 } pixel;
 
 typedef struct {
-    unsigned char current;
-    unsigned char topLeft;
-    unsigned char top;
-    unsigned char topRight;
-    unsigned char left;
-    unsigned char right;
-    unsigned char bottomLeft;
-    unsigned char bottom;
-    unsigned char bottomRight;
+    float current;
+    float topLeft;
+    float topMiddle;
+    float topRight;
+    float left;
+    float right;
+    float bottomLeft;
+    float bottomMiddle;
+    float bottomRight;
 } surroundingPixels;
 
 #endif
