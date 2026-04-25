@@ -11,22 +11,7 @@
 extern pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pixel *leftRow, pixel *rightRow, const size_t LENGTH, const int rank);
 extern void freeOutArray(pixel *pointer);
 
-float* readToGrayscale(const char* filename, int w, int h) {
-    FILE* f = fopen(filename, "rb");
-    if (!f) return NULL;
-    int numPixels = w * h;
-    unsigned char* raw = malloc(numPixels * 3);
-    float* result = malloc(numPixels * sizeof(float));
-
-    if (fread(raw, 1, numPixels * 3, f) == (size_t)pixel_count * 3) {
-        for (int i = 0; i < numPixels; i++) {
-            result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]) / 255.0f;
-        }
-    }
-    free(raw);
-    fclose(f);
-    return result;
-}
+#define GHOSTPIXELVALUE 0
 
 /*
 // IBM POWER9 System clock with 512MHZ resolution.
@@ -43,22 +28,41 @@ unsigned long long aimos_clock_read(void)
   return (((unsigned long long)tbu0) << 32) | tbl;
 }
 */
+
+float* readToGrayscale(const char* filename, size_t totalPixelCount) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) return NULL;
+    unsigned char* raw = malloc(totalPixelCount * 3);
+    float* result = malloc(totalPixelCount * sizeof(float));
+
+    if (fread(raw, 1, totalPixelCount * 3, f) == (size_t)totalPixelCount * 3) {
+        for (int i = 0; i < totalPixelCount; i++) {
+            result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]) / 255.0f;
+        }
+    }
+    free(raw);
+    fclose(f);
+    return result;
+}
+
 int main(int argc, char* argv[])
 {
     //Validate and Define Argument Parameters
     if(argc != 4)
     {
-        printf("Incorrect Arguments: LENGTH WIDTH FILENAME\n");
+        printf("Incorrect Arguments: WIDTH HEIGHT FILENAME\n");
         exit(1);
     }
-    
-    const size_t LENGTH = atoi(argv[1]);
-    const size_t WIDTH = atoi(argv[2]);
-    char *filename = argv[3];
 
-    if(SIZE_MAX < LENGTH || SIZE_MAX < WIDTH)
+    const size_t WIDTH = atoi(argv[1]);
+    const size_t HEIGHT = atoi(argv[2]);
+    
+    char *filename = argv[3];
+    size_t totalPixelCount = HEIGHT * WIDTH;
+
+    if(SIZE_MAX < HEIGHT || SIZE_MAX < WIDTH)
     {
-        printf("LENGTH OR WIDTH IS TOO LARGE!\n");
+        printf("WIDTH OR HEIGHT IS TOO LARGE!\n");
         exit(1);
     }
 
@@ -71,111 +75,147 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
 
+    float* allPixels;
+    surroundingPixels* pixelMesh;
+    if(rank == 0)
+    {
+        allPixels = readToGrayscale(filename, totalPixelCount);
+
+        //Produce array of pixel meshes
+        pixelMesh = malloc(sizeof(surroundingPixels) * totalPixelCount);
+        for(int i = 0; i < totalPixelCount; ++i)
+        {
+            if(i == 0)
+            { //Top left
+                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
+                pixelMesh[i].topRight = GHOSTPIXELVALUE;
+                pixelMesh[i].left = GHOSTPIXELVALUE;
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+            }
+            else if(i == HEIGHT - 1)
+            { //Bottom Left
+                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].topMiddle = allPixels[i - 1];
+                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].left = GHOSTPIXELVALUE;
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = allPixels[i+HEIGHT];
+                pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomMiddle = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
+            }
+            else if(i == totalPixelCount - HEIGHT)
+            { //Top Right
+                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
+                pixelMesh[i].topRight = GHOSTPIXELVALUE;
+                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
+            }
+            else if(i == totalPixelCount - 1)
+            { //Bottom Right
+                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
+                pixelMesh[i].topMiddle = allPixels[i - 1];
+                pixelMesh[i].topRight = GHOSTPIXELVALUE;
+                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomMiddle = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
+            }
+            else if(i < HEIGHT)
+            { //Left Side
+                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].topMiddle = allPixels[i - 1];
+                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].left = GHOSTPIXELVALUE;
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+            }
+            else if(i < totalPixelCount && i > totalPixelCount - HEIGHT - 1)
+            { //Right Side
+                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
+                pixelMesh[i].topMiddle = allPixels[i - 1];
+                pixelMesh[i].topRight = GHOSTPIXELVALUE;
+                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
+            }
+            else if (i % HEIGHT == 0)
+            { //Top
+                pixelMesh[i].topLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
+                pixelMesh[i].topRight = GHOSTPIXELVALUE;
+                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+            }
+            else if(i % HEIGHT - 1 == 0)
+            { //Bottom
+                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
+                pixelMesh[i].topMiddle = allPixels[i - 1];
+                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomMiddle = GHOSTPIXELVALUE;
+                pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
+            }
+            else 
+            {
+                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
+                pixelMesh[i].topMiddle = allPixels[i - 1];
+                pixelMesh[i].topRight = allPixels[i + HEIGHT - 1];
+                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].current = allPixels[i];
+                pixelMesh[i].right = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomLeft = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + 1];
+                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+            }
+        }
+    }
+
+    for(int i = 0; i < totalPixelCount; ++i)
+    {
+        if(i % HEIGHT == 0) printf("\n");
+        printf("%.2lf ", allPixels[i]);
+    }
+
+
     //This is how many pixels each process will recieve
-    const size_t pixelsPerProc = (LENGTH * WIDTH) / nprocs;
+    const size_t pixelsPerProc = (HEIGHT * WIDTH) / nprocs;
 
-    //This is remainder pixels for the last process
-    //This is currently unused, but should be used! Ranks currently need to be divisible by row count.
-    //If width is 100 and length is 100, there can be 100 ranks?
-    const size_t remainderPixelsPerProc = (LENGTH * WIDTH) % nprocs;
+    //SCATTER ALL PIXELS BETWEEN PROCESSES
 
-    //This is an array for each process that contains all its pixels
-    float* myPixels = malloc(pixelsPerProc * sizeof(float));
-
-    unsigned char* pixelBuffer = malloc(pixelBytes);
-
-    MPI_Barrier(MPI_COMM_WORLD);
-
-    //READ FILE INTO RANK 0
-    if (rank == 0) {
-        //read in RGB file and convert to grayscale
-        float * allPixels= readToGrayscale(filename,LENGTH,WIDTH);        
-        //TODO:: scatter to ranks
-
-    }
-    //The logic here needs a second look
-    //Current idea is that the MPI_File_read_at takes in 3 byte at a time and creates a pixel using that data
-    //Then each process will have all its pixels in an array (ideally)
-    for(int i = 0; i < pixelsPerProc; ++i)
-    {
-        offset = i * pixelBytes; 
-        MPI_File_read_at(fh, offset, pixelBuffer, pixelBytes, MPI_UNSIGNED_CHAR, &status);
-
-        //Convert to grayscale
-        myPixels[i] = 0.3 * pixelBuffer[0] + 0.59 * pixelBuffer[1] + 0.11 * pixelBuffer[2];
-
-        //For error checking
-        if(WIDTH/i == 0) printf("%d ", i);
-    }
-
-    printf("\n\n");
-    MPI_File_close(&fh);
-    free(pixelBuffer);
-    MPI_Barrier(MPI_COMM_WORLD);
-
-
-    float *leftRow = malloc(pixelsPerProc * sizeof(float));
-    float *rightRow = malloc(pixelsPerProc * sizeof(float));
-    
-    //Exchange next proc and prev procs pixel arrays
-    MPI_Request requests[4];
-    int request_count = 0;
-    if(nprocs != 1)
-    {
-        if(rank == 0)
-        {
-            for(size_t i = 0; i < pixelsPerProc; ++i)
-            {
-                //set it to black for now
-                leftRow[i] = 0;
-            }
-            MPI_Irecv(rightRow, pixelsPerProc, MPI_FLOAT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-        }
-        else if(rank == nprocs - 1)
-        {
-            for(size_t i = 0; i < pixelsPerProc; ++i)
-            {
-                //set it to black for now
-                rightRow[i] = 0;
-            }
-            MPI_Irecv(leftRow, pixelsPerProc, MPI_FLOAT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
-        }
-        else {
-            MPI_Irecv(leftRow, pixelsPerProc, MPI_FLOAT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Irecv(rightRow, pixelsPerProc, MPI_FLOAT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
-        }
-    }
-    else {
-        for(size_t i = 0; i < pixelsPerProc; ++i)
-        {
-            //set it to black for now
-            leftRow[i] = 0;
-        }
-        for(size_t i = 0; i < pixelsPerProc; ++i)
-        {
-            //set it to black for now
-            rightRow[i] = 0;
-        }
-    }
-
-    MPI_Waitall(request_count, requests, MPI_STATUSES_IGNORE);
-    
     //Run Cuda function (run Sobel on all pixels) //WIDTH is not a good value for this (will not work)
     //pixel *out = runSobelOnPixels(WIDTH, myPixels, leftRow, RightRow, WIDTH, rank);
 
-    unsigned char* out = malloc(pixelsPerProc);
-    for(int i = 0; i < pixelsPerProc; ++i)
-    {
-        out[i] = (unsigned char) ((int)myPixels[i]);
-    }
-    
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //Write output file
+    //UNSCATTER ALL PIXELS
+
+    //Set Output Filename (append _out.data to original filename)
     char* outputFilename = malloc(64);
     for(int i = 0; i < strlen(filename) - 5; ++i)
     {
@@ -183,14 +223,17 @@ int main(int argc, char* argv[])
     }
     outputFilename = strcat(outputFilename, "_out.data\0");
 
+    //Write all calculated data to a new binary
+    MPI_Offset offset = 0;
     MPI_File_open(MPI_COMM_WORLD, outputFilename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &ofh);
     for(int i = 0; i < pixelsPerProc; ++i)
     {
         offset = i;
-        MPI_File_write_at(ofh, offset, out, 1, MPI_UNSIGNED_CHAR, &status);
+        MPI_File_write_at(ofh, offset, allPixels, 1, MPI_FLOAT, &status);
         //printf("new: %lf", myPixels[i]);
         //printf("%d\n", i);
     }
+    free(outputFilename);
 
     MPI_File_close(&ofh);
 
@@ -199,10 +242,7 @@ int main(int argc, char* argv[])
     //REPORT TELEMETRY HERE
     
     //freeOutArray(out);
-    free(outputFilename);
-    free(myPixels);
-    free(leftRow);
-    free(rightRow);
+    
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
