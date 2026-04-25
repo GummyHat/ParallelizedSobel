@@ -51,20 +51,20 @@ pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pix
         currRowCuda[i] = myPixels[i];
     }
 
-    cudaMemPrefetchAsync(leftRowCuda, sizeof(pixel) * LENGTH, Device, 0);
-    cudaMemPrefetchAsync(rightRowCuda, sizeof(pixel) * LENGTH, Device, 0);
-    cudaMemPrefetchAsync(currRowCuda, sizeof(pixel) * LENGTH, Device, 0);
-    cudaMemPrefetchAsync(out, sizeof(pixel) * LENGTH, Device, 0);
+    //cudaMemPrefetchAsync(leftRowCuda, sizeof(pixel) * LENGTH, Device, 0);
+    //cudaMemPrefetchAsync(rightRowCuda, sizeof(pixel) * LENGTH, Device, 0);
+    //cudaMemPrefetchAsync(currRowCuda, sizeof(pixel) * LENGTH, Device, 0);
+    //cudaMemPrefetchAsync(out, sizeof(pixel) * LENGTH, Device, 0);
 
-    const dim3 gridDim = 16384; //These numbers are a bit arbitrary
-    const dim3 blockDim = 1024;
-    sobelKernal<<<gridDim,blockDim>>>(pixelsToCalcPerThread, currRowCuda, leftRowCuda, rightRowCuda, out);
+    //const dim3 gridDim = 16384; //These numbers are a bit arbitrary
+    //const dim3 blockDim = 1024;
+    //sobelKernal<<<gridDim,blockDim>>>(pixelsToCalcPerThread, currRowCuda, leftRowCuda, rightRowCuda, out);
 
     cudaDeviceSynchronize();
 
     cudaFree(leftRowCuda);
     cudaFree(rightRowCuda);
     cudaFree(currRowCuda);
-
+    out = currRowCuda; //TEMPORARY FOR TESTING
     return out;
 }
