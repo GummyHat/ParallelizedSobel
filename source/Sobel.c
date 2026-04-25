@@ -11,6 +11,23 @@
 extern pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pixel *leftRow, pixel *rightRow, const size_t LENGTH, const int rank);
 extern void freeOutArray(pixel *pointer);
 
+float* readToGrayscale(const char* filename, int w, int h) {
+    FILE* f = fopen(filename, "rb");
+    if (!f) return NULL;
+    int numPixels = w * h;
+    unsigned char* raw = malloc(numPixels * 3);
+    float* result = malloc(numPixels * sizeof(float));
+
+    if (fread(raw, 1, pixel_count * 3, f) == (size_t)pixel_count * 3) {
+        for (int i = 0; i < pixel_count; i++) {
+            result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]) / 255.0f;
+        }
+    }
+    free(raw);
+    fclose(f);
+    return result;
+}
+
 /*
 // IBM POWER9 System clock with 512MHZ resolution.
 unsigned long long aimos_clock_read(void)
@@ -69,10 +86,13 @@ int main(int argc, char* argv[])
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //READ FILE INTO EACH PROCESS
-    MPI_File_open(MPI_COMM_WORLD, filename, MPI_MODE_RDONLY, MPI_INFO_NULL, &fh);
-    MPI_Offset offset = 0;
+    //READ FILE INTO RANK 0
+    if (rank == 0) {
+        //read in RGB file and convert to grayscale
+        float * allPixels= readToGrayscale(filename,LENGTH,WIDTH);        
+        //TODO:: scatter to ranks
 
+    }
     //The logic here needs a second look
     //Current idea is that the MPI_File_read_at takes in 3 byte at a time and creates a pixel using that data
     //Then each process will have all its pixels in an array (ideally)
