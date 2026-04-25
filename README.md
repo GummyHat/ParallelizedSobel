@@ -27,6 +27,16 @@ Algorithm:
 
 https://www.youtube.com/watch?v=uihBwtPIBxM
 
+## Current Workflow:
+
+-Binary file is read into an array, and converted into grayscale, using MPI_IO.
+
+-The surrounding pixels are swapped between ranks, such that the Sobel algorithm can be performed on each pixel.
+
+-A Cuda Kernel is launched from each process, so each thread will calculate the new value of each pixel with the Sobel algorithm.
+
+-Data is then output back into a new file that contains a gray scale version of boundary detection from the original image.
+
 
 ### TODO:
 
