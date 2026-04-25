@@ -31,7 +31,10 @@ unsigned long long aimos_clock_read(void)
 
 float* readToGrayscale(const char* filename, size_t totalPixelCount) {
     FILE* f = fopen(filename, "rb");
-    if (!f) return NULL;
+    if (!f) {
+      printf("File could not be opened");
+      exit(1);
+    }
     unsigned char* raw = malloc(totalPixelCount * 3);
     float* result = malloc(totalPixelCount * sizeof(float));
 
