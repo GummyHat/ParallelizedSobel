@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
     const size_t remainderPixelsPerProc = (LENGTH * WIDTH) % nprocs;
 
     //This is an array for each process that contains all its pixels
-    float* myPixels = malloc(pixelsPerProc);
+    float* myPixels = malloc(pixelsPerProc * sizeof(float));
 
     unsigned char* pixelBuffer = malloc(pixelBytes);
 
@@ -85,19 +85,21 @@ int main(int argc, char* argv[])
         myPixels[i] = 0.3 * pixelBuffer[0] + 0.59 * pixelBuffer[1] + 0.11 * pixelBuffer[2];
 
         //For error checking
-        printf("Gray Value:%.2f", myPixels[i]);
+        if(WIDTH/i == 0) printf("%d ", i);
     }
+
     printf("\n\n");
     MPI_File_close(&fh);
     free(pixelBuffer);
     MPI_Barrier(MPI_COMM_WORLD);
 
 
+    float *leftRow = malloc(pixelsPerProc * sizeof(float));
+    float *rightRow = malloc(pixelsPerProc * sizeof(float));
+    
     //Exchange next proc and prev procs pixel arrays
     MPI_Request requests[4];
     int request_count = 0;
-    unsigned char *leftRow = malloc(pixelsPerProc);
-    unsigned char *RightRow = malloc(pixelsPerProc);
     if(nprocs != 1)
     {
         if(rank == 0)
@@ -107,24 +109,24 @@ int main(int argc, char* argv[])
                 //set it to black for now
                 leftRow[i] = 0;
             }
-            MPI_Irecv(RightRow, pixelsPerProc, MPI_UNSIGNED_CHAR, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_UNSIGNED_CHAR, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Irecv(rightRow, pixelsPerProc, MPI_FLOAT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
         }
         else if(rank == nprocs - 1)
         {
             for(size_t i = 0; i < pixelsPerProc; ++i)
             {
                 //set it to black for now
-                RightRow[i] = 0;
+                rightRow[i] = 0;
             }
-            MPI_Irecv(leftRow, pixelsPerProc, MPI_UNSIGNED_CHAR, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_UNSIGNED_CHAR, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Irecv(leftRow, pixelsPerProc, MPI_FLOAT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
         }
         else {
-            MPI_Irecv(leftRow, pixelsPerProc, MPI_UNSIGNED_CHAR, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Irecv(RightRow, pixelsPerProc, MPI_UNSIGNED_CHAR, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_UNSIGNED_CHAR, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
-            MPI_Isend(myPixels, pixelsPerProc, MPI_UNSIGNED_CHAR, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Irecv(leftRow, pixelsPerProc, MPI_FLOAT, rank - 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Irecv(rightRow, pixelsPerProc, MPI_FLOAT, rank + 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank + 1, 200, MPI_COMM_WORLD, &requests[request_count++]);
+            MPI_Isend(myPixels, pixelsPerProc, MPI_FLOAT, rank - 1, 100, MPI_COMM_WORLD, &requests[request_count++]);
         }
     }
     else {
@@ -136,14 +138,20 @@ int main(int argc, char* argv[])
         for(size_t i = 0; i < pixelsPerProc; ++i)
         {
             //set it to black for now
-            RightRow[i] = 0;
+            rightRow[i] = 0;
         }
     }
 
     MPI_Waitall(request_count, requests, MPI_STATUSES_IGNORE);
-
+    
     //Run Cuda function (run Sobel on all pixels) //WIDTH is not a good value for this (will not work)
     //pixel *out = runSobelOnPixels(WIDTH, myPixels, leftRow, RightRow, WIDTH, rank);
+
+    unsigned char* out = malloc(pixelsPerProc);
+    for(int i = 0; i < pixelsPerProc; ++i)
+    {
+        out[i] = (unsigned char) ((int)myPixels[i]);
+    }
     
     MPI_Barrier(MPI_COMM_WORLD);
 
@@ -154,26 +162,29 @@ int main(int argc, char* argv[])
         outputFilename[i] = filename[i];
     }
     outputFilename = strcat(outputFilename, "_out.data\0");
+
     MPI_File_open(MPI_COMM_WORLD, outputFilename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &ofh);
     for(int i = 0; i < pixelsPerProc; ++i)
     {
-        offset = i;  
-        MPI_File_write_at(ofh, offset, myPixels, 1, MPI_UNSIGNED_CHAR, &status);
-        printf("new: %lf", myPixels[i]);
+        offset = i;
+        MPI_File_write_at(ofh, offset, out, 1, MPI_UNSIGNED_CHAR, &status);
+        //printf("new: %lf", myPixels[i]);
+        //printf("%d\n", i);
     }
+
     MPI_File_close(&ofh);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     //REPORT TELEMETRY HERE
-
+    
     //freeOutArray(out);
     free(outputFilename);
     free(myPixels);
     free(leftRow);
-    free(RightRow);
+    free(rightRow);
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
     return 0;
-
+    
 }
