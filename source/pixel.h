@@ -11,12 +11,12 @@ typedef struct {
 typedef struct {
     unsigned char current;
     unsigned char topLeft;
-    unsigned char topMiddle;
+    unsigned char top;
     unsigned char topRight;
     unsigned char left;
     unsigned char right;
     unsigned char bottomLeft;
-    unsigned char bottomMiddle;
+    unsigned char bottom;
     unsigned char bottomRight;
 } surroundingPixels;
 
