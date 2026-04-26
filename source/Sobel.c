@@ -8,8 +8,8 @@
 
 #define pixelBytes 3
 
-extern pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pixel *leftRow, pixel *rightRow, const size_t LENGTH, const int rank);
-extern void freeOutArray(pixel *pointer);
+extern float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank);
+extern void freeOutArray(float *pointer);
 
 #define GHOSTPIXELVALUE 0
 
@@ -51,16 +51,16 @@ float* readToGrayscale(const char* filename, size_t totalPixelCount) {
 int main(int argc, char* argv[])
 {
     //Validate and Define Argument Parameters
-    if(argc != 4)
+    if(argc != 5)
     {
-        printf("Incorrect Arguments: WIDTH HEIGHT FILENAME\n");
+        printf("Incorrect Arguments: WIDTH HEIGHT FILENAME OUTPUTFILENAME\n");
         exit(1);
     }
 
     const size_t WIDTH = atoi(argv[1]);
     const size_t HEIGHT = atoi(argv[2]);
-    
     char *filename = argv[3];
+    char *outputFilename = argv[4];
     size_t totalPixelCount = HEIGHT * WIDTH;
 
     if(SIZE_MAX < HEIGHT || SIZE_MAX < WIDTH)
@@ -90,7 +90,7 @@ int main(int argc, char* argv[])
         {
             if(i == 0)
             { //Top left
-                printf("Top Left\n");
+                //printf("Top Left\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
@@ -103,7 +103,7 @@ int main(int argc, char* argv[])
             }
             else if(i == HEIGHT - 1)
             { //Top Right
-                printf("Top Right\n");
+                //printf("Top Right\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
@@ -116,7 +116,7 @@ int main(int argc, char* argv[])
             }
             else if(i == totalPixelCount - HEIGHT)
             { //Bottom Left
-                printf("Bottom Left\n");
+                //printf("Bottom Left\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
                 pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
             }
             else if(i == totalPixelCount - 1)
             { //Bottom Right
-                printf("Bottom Right\n");
+                //printf("Bottom Right\n");
                 pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
                 pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
@@ -142,7 +142,7 @@ int main(int argc, char* argv[])
             }
             else if(i < HEIGHT)
             { //Top Side
-                printf("Top Side\n");
+                //printf("Top Side\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].topMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
@@ -155,7 +155,7 @@ int main(int argc, char* argv[])
             }
             else if(i < totalPixelCount && i > totalPixelCount - HEIGHT - 1)
             { //Bottom
-                printf("Bottom\n");
+                //printf("Bottom\n");
                 pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
                 pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
                 pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
@@ -168,7 +168,7 @@ int main(int argc, char* argv[])
             }
             else if (i % HEIGHT == 0)
             { //Left
-                printf("Left\n");
+                //printf("Left\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
                 pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
                 pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
@@ -181,7 +181,7 @@ int main(int argc, char* argv[])
             }
             else if(i % HEIGHT == HEIGHT - 1)
             { //Right
-                printf("Right\n");
+                //printf("Right\n");
                 pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
                 pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
             }
             else 
             {
-                printf("ELSE CASE\n");
+                //printf("ELSE CASE\n");
                 pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
                 pixelMesh[i].topMiddle = allPixels[i - 1];
                 pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
@@ -208,57 +208,52 @@ int main(int argc, char* argv[])
         }
     }
 
-    //This is how many pixels each process will recieve except the last one
-    size_t pixelsPerProc;
-    size_t recvcount;    
-    if(nprocs == 1){//case to prevent divide by 0
-    pixelsPerProc = (HEIGHT * WIDTH);
-    recvcount = (HEIGHT*WIDTH);
-    }
-    else{
-    pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
-    recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
-    }
+    //This is how many pixels each process will recieve
+    const size_t pixelsPerProc = (HEIGHT * WIDTH) / nprocs;
+
     //SCATTER ALL PIXELS BETWEEN PROCESSES
-    //last rank gets remainder, all others get evenly divided.
-    const size_t recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
+
+    //Run Cuda function (run Sobel on all pixels)
+    surroundingPixels *subPixelMesh = malloc(sizeof(surroundingPixels) * 3);
+    size_t pixelsPerThread = 5;
+
+    float *out = runSobelOnPixels(pixelsPerThread, subPixelMesh, WIDTH, HEIGHT, rank);
     
-    //Run Cuda function (run Sobel on all pixels) //WIDTH is not a good value for this (will not work)
-    //pixel *out = runSobelOnPixels(WIDTH, myPixels, leftRow, RightRow, WIDTH, rank);
-
     MPI_Barrier(MPI_COMM_WORLD);
-
-    //UNSCATTER ALL PIXELS
-
-    //Set Output Filename (append _out.data to original filename)
-    char* outputFilename = malloc(64);
-    for(int i = 0; i < strlen(filename) - 5; ++i)
-    {
-        outputFilename[i] = filename[i];
-    }
-    outputFilename = strcat(outputFilename, "_out.data\0");
-
+    
+    //GATHER ALL PIXELS
+    
     //Write all calculated data to a new binary
     MPI_Offset offset = 0;
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    
     MPI_File_open(MPI_COMM_WORLD, outputFilename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &ofh);
+    
+    /*
     for(int i = 0; i < pixelsPerProc; ++i)
     {
         offset = i;
-        MPI_File_write_at(ofh, offset, allPixels, 1, MPI_FLOAT, &status);
+        //MPI_File_write_at(ofh, offset, out, 1, MPI_FLOAT, &status);
         //printf("new: %lf", myPixels[i]);
         //printf("%d\n", i);
     }
-    free(outputFilename);
-
+    */
     MPI_File_close(&ofh);
 
     MPI_Barrier(MPI_COMM_WORLD);
 
     //REPORT TELEMETRY HERE
+    if(rank == 0)
+    {
+        free(pixelMesh);
+    }
     
-    //freeOutArray(out);
+    free(allPixels);
+    freeOutArray(out);
     
     MPI_Barrier(MPI_COMM_WORLD);
+    
     MPI_Finalize();
     return 0;
     
