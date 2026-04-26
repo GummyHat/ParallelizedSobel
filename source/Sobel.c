@@ -209,9 +209,11 @@ int main(int argc, char* argv[])
     }
 
     //This is how many pixels each process will recieve
-    const size_t pixelsPerProc = (HEIGHT * WIDTH) / nprocs;
+    const size_t pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
 
     //SCATTER ALL PIXELS BETWEEN PROCESSES
+    //last rank gets remainder, all others get 
+    const size_t recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
 
     //Run Cuda function (run Sobel on all pixels) //WIDTH is not a good value for this (will not work)
     //pixel *out = runSobelOnPixels(WIDTH, myPixels, leftRow, RightRow, WIDTH, rank);
