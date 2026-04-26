@@ -14,9 +14,10 @@ extern void freeOutArray(float *pointer);
 
 #define GHOSTPIXELVALUE 0
 
-/*
+typedef unsigned long long ticks;
+
 // IBM POWER9 System clock with 512MHZ resolution.
-unsigned long long aimos_clock_read(void)
+static __inline__ ticks getticks(void)
 {
   unsigned int tbl, tbu0, tbu1;
 
@@ -28,7 +29,7 @@ unsigned long long aimos_clock_read(void)
 
   return (((unsigned long long)tbu0) << 32) | tbl;
 }
-*/
+
 
 float* readToGrayscale(const char* filename, size_t totalPixelCount) {
     FILE* f = fopen(filename, "rb");
@@ -41,6 +42,7 @@ float* readToGrayscale(const char* filename, size_t totalPixelCount) {
 
     if (fread(raw, 1, totalPixelCount * 3, f) == (size_t)totalPixelCount * 3) {
         for (int i = 0; i < totalPixelCount; i++) {
+            //Convert to grayscale:
             result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]);
         }
     }
@@ -250,6 +252,15 @@ int main(int argc, char* argv[])
 
     //printf("\n\nsendcounts: %d\tdispls %d\n\n", sendcounts[0], displs[0]);
 
+    // START TIME
+    ticks start = 0;
+    ticks finish = 0;
+    if (rank == 0)
+    {
+        start = getticks();
+    }
+
+
     //SCATTER ALL PIXELS BETWEEN PROCESSES
     surroundingPixels *subPixelMesh = malloc(sizeof(surroundingPixels) * recvcount);
     MPI_Scatterv(pixelMesh,
@@ -264,6 +275,13 @@ int main(int argc, char* argv[])
 
     //Run Cuda function (run Sobel on all pixels)
     //printf("rank: %d\tTEST\n", rank);
+
+    ticks cuda_start = 0;
+    ticks cuda_finish = 0;
+    if(rank == 0)
+    {
+        cuda_start = getticks();
+    }
     float *out = runSobelOnPixels((size_t)recvcount, subPixelMesh, WIDTH, HEIGHT, rank);
 
     MPI_Barrier(MPI_COMM_WORLD);
@@ -273,7 +291,6 @@ int main(int argc, char* argv[])
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //Does not need MPI_Gather because each rank can write to the file on its own
     MPI_File_open(MPI_COMM_WORLD, outputFilename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &ofh);
 
     MPI_File_write_at(ofh, offset, out, recvcount, MPI_FLOAT, &status);
@@ -282,12 +299,18 @@ int main(int argc, char* argv[])
 
     MPI_Barrier(MPI_COMM_WORLD);
 
-    //REPORT TELEMETRY HERE
+    // TELEMETRY REPORT + frees
     if(rank == 0)
     {
         free(pixelMesh);
         free(allPixels);
-    }
+
+        finish = getticks();
+
+        printf("Ranks: %d\nPhoto Size: %dx%d", nprocs, WIDTH, HEIGHT);
+        printf("Total time for all parallel calculation (Cuda + MPI) is %lf seconds\n", (finish - start) / (double)512000000.0);
+        printf("Total time for Cuda parallel calculation (Cuda) is %lf seconds\n", (cuda_finish - cuda_start) / (double)512000000.0);
+    }   
 
     free(subPixelMesh);
     free(sendcounts);
