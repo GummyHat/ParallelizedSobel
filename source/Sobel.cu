@@ -7,7 +7,7 @@
 
 extern "C"
 {
-    float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank);
+    float* runSobelOnPixels(const size_t totalPixels, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank);
     void freeOutArray(float *pointer)
     {
         cudaFree(pointer);
@@ -16,17 +16,17 @@ extern "C"
 
 // CUDA kernal to perform Sobel calulation on each pixel
 __global__
-void sobelKernal(const size_t pixelsPerThread, surroundingPixels *in, float* out)
+void sobelKernal(const size_t totalPixels, surroundingPixels *in, float* out)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
-    for(int i = index; i < pixelsPerThread; i += stride)
+    for(int i = index; i < totalPixels; i += stride)
     {
         //Sobel Logic Here
-        float Gx = (-1 * in->topLeft) + (1 * in->topLeft) + (-2 * in->left) +
-                        (2 * in->right) + (-1 * in->bottomLeft) + (1 * in->bottomRight);
-        float Gy = (-1 * in->topLeft) + (-2 * in->topMiddle) + (-1 * in->topRight) +
-                        (1 * in->bottomLeft) + (2 * in->bottomMiddle) + (1 * in->bottomRight);
+        float Gx = (-1 * in[i].topLeft) + (1 * in[i].topRight) + (-2 * in[i].left) +
+                        (2 * in[i].right) + (-1 * in[i].bottomLeft) + (1 * in[i].bottomRight);
+        float Gy = (-1 * in[i].topLeft) + (-2 * in[i].topMiddle) + (-1 * in[i].topRight) +
+                        (1 * in[i].bottomLeft) + (2 * in[i].bottomMiddle) + (1 * in[i].bottomRight);
         float GxPow = std::pow(Gx, 2);
         float GyPow = std::pow(Gy, 2);
         float magnitude = std::sqrt(GxPow + GyPow);
@@ -35,7 +35,7 @@ void sobelKernal(const size_t pixelsPerThread, surroundingPixels *in, float* out
 }
 
 
-float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank)
+float* runSobelOnPixels(const size_t totalPixels, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank)
 {
     int NumDevices;
     cudaGetDeviceCount(&NumDevices);
@@ -45,21 +45,21 @@ float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixel
     surroundingPixels *in;
     float *out;
 
-    cudaMallocManaged(&in, sizeof(surroundingPixels) * WIDTH);
-    cudaMallocManaged(&out, sizeof(surroundingPixels) * WIDTH);
+    cudaMallocManaged(&in,  sizeof(surroundingPixels) * totalPixels);
+    cudaMallocManaged(&out, sizeof(float)             * totalPixels);
 
     //Copy in arraya into Cuda memory
-    for(int i = 0; i < WIDTH; ++i)
+    for(size_t i = 0; i < totalPixels; ++i)
     {
         in[i] = myPixels[i];
     }
 
     //cudaMemPrefetchAsync(in, sizeof(surroundingPixels) * LENGTH, Device, 0);
-    //cudaMemPrefetchAsync(out, sizeof(float) * WIDTH, Device, 0);
+    //cudaMemPrefetchAsync(out, sizeof(float) * totalPixels, Device, 0);
 
-    const dim3 gridDim = 2; //These numbers are a bit arbitrary
-    const dim3 blockDim = 2;
-    sobelKernal<<<gridDim,blockDim>>>(pixelsPerThread, in, out);
+    const dim3 gridDim = 32;
+    const dim3 blockDim = 128;
+    sobelKernal<<<gridDim,blockDim>>>(totalPixels, in, out);
 
     cudaDeviceSynchronize();
 
