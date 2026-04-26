@@ -5,9 +5,14 @@ This is a repository containing code for a parallelized Sobel algorithm that uti
 
 This is a program that runs the Sobel boundary detection algorithm using MPI, MPI_IO, and CUDA functions.
 
+
 Sobel.c contains all MPI code and the main function.
+
 Sobel.cu contains Cuda implementation.
+
 pixel.h contains 2 datatypes that are used in both Sobel.c and Sobel.cu
+
+
 
 There is a Makefile included that will compile all 3 of these files into a simple binary.
 
@@ -17,10 +22,14 @@ The photograph used for testing can be found here: https://svs.gsfc.nasa.gov/308
 
 The files used for testing are much too large for upload to GitHub, but output images will be present within the write-up.
 
-To run the binary, the parameters look something like:
+
+
+##To run the binary, the parameters look something like:
+
 mpirun -np RANKS ./Sobel-mpi-multi-gpu WIDTH HEIGHT input-filename output-filename
 
 Be wary that only square photographs can be used, and must be in a .data (byte) format.
+
 Use an RGB file where each color value is a byte and ordered contiguously. GIMP is recommended for this, but not entirely necessary.
 
 The output-filename is whatever you choose to name your output file.
