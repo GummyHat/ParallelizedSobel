@@ -65,9 +65,9 @@ Cuda Runtime: 2.884574 seconds
 
 BlackMarble_2016_C1_18432x18432 4 ranks 1 node
 
-Total Runtime: CRASH
+Total Runtime: 3.791389 seconds
 
-Cuda Runtime: CRASH
+Cuda Runtime: 1.432372 seconds
 
 
 
