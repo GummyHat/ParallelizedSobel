@@ -213,16 +213,16 @@ int main(int argc, char* argv[])
     pixelsPerProc = (HEIGHT * WIDTH);
     recvcount = (HEIGHT*WIDTH);
     //test prints
-    printf("%d pixelsPerProc\n",pixelsPerProc);
-    printf("%d recvcount\n",recvcount);
+    printf("%ld pixelsPerProc\n",pixelsPerProc);
+    printf("%ld recvcount\n",recvcount);
     }
     else{
     pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
     recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
     
     //test prints
-    printf("%d pixelsPerProc\n",pixelsPerProc);
-    printf("%d recvcount\n",recvcount);
+    printf("%ld pixelsPerProc\n",pixelsPerProc);
+    printf("%ld recvcount\n",recvcount);
     }
     //SCATTER ALL PIXELS BETWEEN PROCESSES
 
