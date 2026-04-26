@@ -10,7 +10,7 @@ This is a repository containing code for a parallelized Sobel algorithm that uti
 
 <p align="center">
     <img src="green_creature_input.png" alt="Input" width="45%">                                                                                                                  
-    <img src="green_creature_output.png" alt="Output" width="45%">                                                                                                                                               
+    <img src="green_creature_sobel.png" alt="Output" width="45%">                                                                                                                                               
 </p>
 
 
