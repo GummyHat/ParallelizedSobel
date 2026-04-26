@@ -41,7 +41,7 @@ float* readToGrayscale(const char* filename, size_t totalPixelCount) {
     float* result = malloc(totalPixelCount * sizeof(float));
 
     if (fread(raw, 1, totalPixelCount * 3, f) == (size_t)totalPixelCount * 3) {
-        for (int i = 0; i < totalPixelCount; i++) {
+        for (size_t i = 0; i < totalPixelCount; i++) {
             //Convert to grayscale:
             result[i] = (0.299f * raw[i*3] + 0.587f * raw[i*3+1] + 0.114f * raw[i*3+2]);
         }
@@ -64,7 +64,7 @@ int main(int argc, char* argv[])
     const int HEIGHT = atoi(argv[2]);
     char *filename = argv[3];
     char *outputFilename = argv[4];
-    size_t totalPixelCount = HEIGHT * WIDTH;
+    size_t totalPixelCount = (size_t)HEIGHT * (size_t)WIDTH;
 
     if(SIZE_MAX < HEIGHT || SIZE_MAX < WIDTH)
     {
@@ -89,7 +89,7 @@ int main(int argc, char* argv[])
 
         //Produce array of pixel meshes
         pixelMesh = malloc(sizeof(surroundingPixels) * totalPixelCount);
-        for(int i = 0; i < totalPixelCount; ++i)
+        for(size_t i = 0; i < totalPixelCount; ++i)
         {
             if(i == 0)
             { //Top left
