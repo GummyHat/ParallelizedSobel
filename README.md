@@ -1,7 +1,7 @@
 # ParallelizedSobel
 This is a repository containing code for a parallelized Sobel algorithm that utilizes MPI and CUDA function calls. This program is meant to run on Power9 system architecture.
 
-#PARALLEL SOBEL BOUNDARY DETECTION
+**PARALLEL SOBEL BOUNDARY DETECTION**
 
 This is a program that runs the Sobel boundary detection algorithm using MPI, MPI_IO, and CUDA functions.
 
@@ -24,7 +24,7 @@ The files used for testing are much too large for upload to GitHub, but output i
 
 
 
-##To run the binary, the parameters look something like:
+**To run the binary, the parameters look something like:**
 
 mpirun -np RANKS ./Sobel-mpi-multi-gpu WIDTH HEIGHT input-filename output-filename
 
@@ -45,7 +45,7 @@ It is also recommended to go into GIMP color>Auto>Stretch Contrast for better vi
 
 These are all testing scenarios present within the sbatch scripts.
 
-##Strong Scaling:
+**Strong Scaling:**
 
 BlackMarble_2016_C1_18432x18432 1 ranks 1 node
 
