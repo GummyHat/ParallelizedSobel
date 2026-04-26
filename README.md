@@ -45,6 +45,7 @@ It is also recommended to go into GIMP color>Auto>Stretch Contrast for better vi
 
 These are all testing scenarios present within the sbatch scripts.
 
+
 **Strong Scaling:**
 
 BlackMarble_2016_C1_18432x18432 1 ranks 1 node
@@ -53,7 +54,7 @@ Total Runtime: 8.726945 seconds
 
 Cuda Runtime: 5.348938 seconds
 
-
+------------------------------
 
 BlackMarble_2016_C1_18432x18432 2 ranks 1 node
 
@@ -61,7 +62,7 @@ Total Runtime: 5.795312 seconds
 
 Cuda Runtime: 2.884574 seconds
 
-
+------------------------------
 
 BlackMarble_2016_C1_18432x18432 4 ranks 1 node
 
@@ -69,7 +70,7 @@ Total Runtime: 3.791389 seconds
 
 Cuda Runtime: 1.432372 seconds
 
-
+------------------------------
 
 BlackMarble_2016_C1_18432x18432 8 ranks 2 node
 
@@ -77,7 +78,7 @@ Total Runtime: 4.009085 seconds
 
 Cuda Runtime: 0.745842 seconds
 
-
+------------------------------
 
 BlackMarble_2016_C1_18432x18432 16 ranks 3 node
 
@@ -85,7 +86,7 @@ Total Runtime: 4.296658 seconds
 
 Cuda Runtime: 0.469719 seconds
 
-
+------------------------------
 
 BlackMarble_2016_C1_18432x18432 32 ranks 6 node
 
@@ -93,7 +94,7 @@ Total Runtime: 3.910650 seconds
 
 Cuda Runtime: 0.285459 seconds
 
-
+------------------------------
 
 **Weak Scaling:**
 
@@ -103,7 +104,7 @@ Total Runtime: 3.669618 seconds
 
 Cuda Runtime: 2.245136 second
 
-
+------------------------------
 
 BlackMarble_2016_Full_16384x16384 2 ranks 1 node
 
@@ -111,7 +112,7 @@ Total Runtime: 4.811697 seconds
 
 Cuda Runtime: 2.360394 seconds
 
-
+------------------------------
 
 BlackMarble_2016_Full_23170x23170 4 ranks 1 node
 
@@ -119,7 +120,7 @@ Total Runtime: 7.116398 seconds
 
 Cuda Runtime: 1.920250 seconds
 
-
+------------------------------
 
 BlackMarble_2016_Full_32768x32768 8 ranks 2 nodes
 
@@ -127,7 +128,7 @@ Total Runtime: 11.498551 seconds
 
 Cuda Runtime: 1.904782 seconds
 
-
+------------------------------
 
 BlackMarble_2016_Full_46341x46341 16 ranks 3 nodes
 
@@ -135,13 +136,7 @@ Total Runtime: 23.138975 seconds
 
 Cuda Runtime: 2.169928
 
-
-
-BlackMarble_2016_Full_65536x65536 32 ranks 6 nodes
-
-Total Runtime:
-
-Cuda Runtime: 
+------------------------------
 
 
 
