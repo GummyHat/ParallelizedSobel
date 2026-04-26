@@ -1,51 +1,53 @@
 # ParallelizedSobel
 This is a repository containing code for a parallelized Sobel algorithm that utilizes MPI and CUDA function calls. This program is meant to run on Power9 system architecture.
 
+#PARALLEL SOBEL BOUNDARY DETECTION
 
-This is image edge detection:
--Sobel or Prewitt Filter
--Look at an image file (MPI-IO)
--Output a grayscale image where each pixel represents the strength of a detected edge
+This is a program that runs the Sobel boundary detection algorithm using MPI, MPI_IO, and CUDA functions.
 
-Convert file to a binary file (.bin) for reading the image into each node's memory
-Use MPI_File_read_at for each ranks chunk of the photo (rank 0 does row 1; rank 1 does row 2)
-Then MPI_send recv for calculations
--Need to hard code length and width
+Sobel.c contains all MPI code and the main function.
+Sobel.cu contains Cuda implementation.
+Pixel.h contains 2 datatypes that are used in both Sobel.c and Sobel.cu
 
-MPI_IO reads and outputs image
-MPI to send and recv adjacent pixel rows
-CUDA to calculate SOBEL Values
-MPI_IO outputs new image
+There is a Makefile included that will compile all 3 of these files into a simple binary.
 
+There are also 4 sbatch scripts that cummulatively test strong and weak scaling using the BlackMarble 2016 photograph.
 
-Each pixel is dependent on adjacent pixels, but not on those pixels' results
+The photograph used for testing can be found here: https://svs.gsfc.nasa.gov/30876
 
-#### 3 BYTES PER PIXEL RGB IN ORDER!!!
+The files used for testing are much too large for upload to GitHub, but output images will be present within the write-up.
 
-Algorithm:
--Measure intensity in its 3x3 area (high intensity)
+To run the binary, the parameters look something like:
+mpirun -np RANKS ./Sobel-mpi-multi-gpu WIDTH HEIGHT input-filename output-filename
 
-https://www.youtube.com/watch?v=uihBwtPIBxM
+Be wary that only square photographs can be used, and must be in a .data (byte) format.
+Use an RGB file where each color value is a byte and ordered contiguously. GIMP is recommended for this, but not entirely necessary.
 
-## Current Workflow:
+The output-filename is whatever you choose to name your output file.
 
--Binary file is read into an array, and converted into grayscale, using MPI_IO.
+This output file will be a grayscale representation of the calculated Sobel valued pixels. Thus, it will outline any boundaries found within the input photograph.
 
--The surrounding pixels are swapped between ranks, such that the Sobel algorithm can be performed on each pixel.
+To view your output file GIMP is again recommended. It will ask for various specifications:
+- Make sure your height and width is set to the same height and width of your input file
+- Offset must be 0
+- Image Type should be Gray 32-bit Float
 
--A Cuda Kernel is launched from each process, so each thread will calculate the new value of each pixel with the Sobel algorithm.
+It is also recommended to go into GIMP color>Auto>Stretch Contrast for better viewing
 
--Data is then output back into a new file that contains a gray scale version of boundary detection from the original image.
+These are all testing scenarios present within the sbatch scripts.
+Strong Scaling:
+BlackMarble_2016_C1_18432x18432 1 ranks 1 node
+BlackMarble_2016_C1_18432x18432 2 ranks 1 node
+BlackMarble_2016_C1_18432x18432 4 ranks 1 node
+BlackMarble_2016_C1_18432x18432 8 ranks 2 nodes
+BlackMarble_2016_C1_18432x18432 16 ranks 3 nodes
+BlackMarble_2016_C1_18432x18432 32 ranks 6 nodes
 
+Weak Scaling
+BlackMarble_2016_Full_11585x11585 1 ranks 1 node
+BlackMarble_2016_Full_16384x16384 2 ranks 1 node
+BlackMarble_2016_Full_23170x23170 4 ranks 1 node
+BlackMarble_2016_Full_32768x32768 8 ranks 2 nodes
+BlackMarble_2016_Full_46341x46341 16 ranks 3 nodes
+BlackMarble_2016_Full_65536x65536 32 ranks 6 nodes
 
-### TODO:
-
--Currently, the number of MPI Ranks must be equal to the width of the image for logic to work. This must be resolved.
-
--The output file is 1/3 the size of the input, which is perfect. But, each pixel of the output file is equal to the grayscale value of the first pixel of the input file.
-
--Ensure MPI send/recvs are working
-
--Finishing writing Kernel
-
--Modify Cuda functionality to account for grayscale. This was originally writted to accomodate for RGB
