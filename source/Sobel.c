@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include <string.h>
 #include <stdint.h>
+#include <stddef.h>
 #include "pixel.h"
 
 #define pixelBytes 3
@@ -57,8 +58,8 @@ int main(int argc, char* argv[])
         exit(1);
     }
 
-    const size_t WIDTH = atoi(argv[1]);
-    const size_t HEIGHT = atoi(argv[2]);
+    const int WIDTH = atoi(argv[1]);
+    const int HEIGHT = atoi(argv[2]);
     char *filename = argv[3];
     char *outputFilename = argv[4];
     size_t totalPixelCount = HEIGHT * WIDTH;
@@ -78,8 +79,8 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &nprocs);
 
 
-    float* allPixels;
-    surroundingPixels* pixelMesh;
+    float* allPixels = NULL;
+    surroundingPixels* pixelMesh = NULL;
     if(rank == 0)
     {
         allPixels = readToGrayscale(filename, totalPixelCount);
@@ -98,10 +99,10 @@ int main(int argc, char* argv[])
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = allPixels[i + 1];
                 pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
-                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + WIDTH];
+                pixelMesh[i].bottomRight = allPixels[i + WIDTH + 1];
             }
-            else if(i == HEIGHT - 1)
+            else if(i == WIDTH - 1)
             { //Top Right
                 //printf("Top Right\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
@@ -110,16 +111,16 @@ int main(int argc, char* argv[])
                 pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomLeft = allPixels[i + WIDTH - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + WIDTH];
                 pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
             }
-            else if(i == totalPixelCount - HEIGHT)
+            else if(i == totalPixelCount - WIDTH)
             { //Bottom Left
                 //printf("Bottom Left\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
-                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].topMiddle = allPixels[i - WIDTH];
+                pixelMesh[i].topRight = allPixels[i - WIDTH + 1];
                 pixelMesh[i].left = GHOSTPIXELVALUE;
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = allPixels[i + 1];
@@ -130,8 +131,8 @@ int main(int argc, char* argv[])
             else if(i == totalPixelCount - 1)
             { //Bottom Right
                 //printf("Bottom Right\n");
-                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
-                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
+                pixelMesh[i].topLeft = allPixels[i - WIDTH - 1];
+                pixelMesh[i].topMiddle = allPixels[i - WIDTH];
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
                 pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
@@ -140,7 +141,7 @@ int main(int argc, char* argv[])
                 pixelMesh[i].bottomMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
             }
-            else if(i < HEIGHT)
+            else if(i < WIDTH)
             { //Top Side
                 //printf("Top Side\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
@@ -149,16 +150,16 @@ int main(int argc, char* argv[])
                 pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = allPixels[i + 1];
-                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
-                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+                pixelMesh[i].bottomLeft = allPixels[i + WIDTH - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + WIDTH];
+                pixelMesh[i].bottomRight = allPixels[i + WIDTH + 1];
             }
-            else if(i < totalPixelCount && i > totalPixelCount - HEIGHT - 1)
+            else if(i < totalPixelCount && i > totalPixelCount - WIDTH - 1)
             { //Bottom
                 //printf("Bottom\n");
-                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
-                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
-                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].topLeft = allPixels[i - WIDTH - 1];
+                pixelMesh[i].topMiddle = allPixels[i - WIDTH];
+                pixelMesh[i].topRight = allPixels[i - WIDTH + 1];
                 pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = allPixels[i + 1];
@@ -166,128 +167,116 @@ int main(int argc, char* argv[])
                 pixelMesh[i].bottomMiddle = GHOSTPIXELVALUE;
                 pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
             }
-            else if (i % HEIGHT == 0)
+            else if (i % WIDTH == 0)
             { //Left
                 //printf("Left\n");
                 pixelMesh[i].topLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
-                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
+                pixelMesh[i].topMiddle = allPixels[i - WIDTH];
+                pixelMesh[i].topRight = allPixels[i - WIDTH + 1];
                 pixelMesh[i].left = GHOSTPIXELVALUE;
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = allPixels[i + 1];
                 pixelMesh[i].bottomLeft = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
-                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + WIDTH];
+                pixelMesh[i].bottomRight = allPixels[i + WIDTH + 1];
             }
-            else if(i % HEIGHT == HEIGHT - 1)
+            else if(i % WIDTH == WIDTH - 1)
             { //Right
                 //printf("Right\n");
-                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
-                pixelMesh[i].topMiddle = allPixels[i - HEIGHT];
+                pixelMesh[i].topLeft = allPixels[i - WIDTH - 1];
+                pixelMesh[i].topMiddle = allPixels[i - WIDTH];
                 pixelMesh[i].topRight = GHOSTPIXELVALUE;
                 pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = GHOSTPIXELVALUE;
-                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
+                pixelMesh[i].bottomLeft = allPixels[i + WIDTH - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + WIDTH];
                 pixelMesh[i].bottomRight = GHOSTPIXELVALUE;
             }
-            else 
+            else
             {
                 //printf("ELSE CASE\n");
-                pixelMesh[i].topLeft = allPixels[i - HEIGHT - 1];
-                pixelMesh[i].topMiddle = allPixels[i - 1];
-                pixelMesh[i].topRight = allPixels[i - HEIGHT + 1];
-                pixelMesh[i].left = allPixels[i - HEIGHT];
+                pixelMesh[i].topLeft = allPixels[i - WIDTH - 1];
+                pixelMesh[i].topMiddle = allPixels[i - WIDTH];
+                pixelMesh[i].topRight = allPixels[i - WIDTH + 1];
+                pixelMesh[i].left = allPixels[i - 1];
                 pixelMesh[i].current = allPixels[i];
                 pixelMesh[i].right = allPixels[i + 1];
-                pixelMesh[i].bottomLeft = allPixels[i + HEIGHT - 1];
-                pixelMesh[i].bottomMiddle = allPixels[i + HEIGHT];
-                pixelMesh[i].bottomRight = allPixels[i + HEIGHT + 1];
+                pixelMesh[i].bottomLeft = allPixels[i + WIDTH - 1];
+                pixelMesh[i].bottomMiddle = allPixels[i + WIDTH];
+                pixelMesh[i].bottomRight = allPixels[i + WIDTH + 1];
             }
         }
     }
 
     //This is how many pixels each process will recieve
-    size_t pixelsPerProc;
-    size_t recvcount;
+    int pixelsPerProc;
+    int recvcount;
 
-    if(nprocs == 1)
-    { //case to prevent divide by 0
-        pixelsPerProc = (HEIGHT * WIDTH);
-        recvcount = (HEIGHT*WIDTH);
-        //test prints
-        printf("%ld pixelsPerProc\n",pixelsPerProc);
-        printf("%ld recvcount\n",recvcount);
-    }
-    else
-    {
-        pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
-        recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
-        
-        //test prints
-        printf("%ld pixelsPerProc\n",pixelsPerProc);
-        printf("%ld recvcount\n",recvcount);
-    }
+    pixelsPerProc = totalPixelCount / nprocs;
+    int remainder = totalPixelCount % nprocs;
+    recvcount = pixelsPerProc + ((rank == nprocs - 1) ? remainder : 0);
 
-    surroundingPixels * recvbuf = malloc(sizeof(surroundingPixels)*recvcount);
+    //test prints
+    //printf("rank:%d\t %d pixelsPerProc\n", rank, pixelsPerProc);
+    //printf("rank:%d\t %d recvcount\n", rank, recvcount);
+
     int * sendcounts = malloc(sizeof(int)*nprocs);
     int * displs = malloc(sizeof(int)*nprocs);
     int sum = 0;
-    for(int i = 0; i < (nprocs-1); ++i){
-        sendcounts[i] = (int) pixelsPerProc;
-        displs[i]= sum;
+    for(int i = 0; i < nprocs; ++i)
+    {
+        sendcounts[i] = pixelsPerProc + ((i == nprocs - 1) ? remainder : 0);
+        displs[i] = sum;
         sum += sendcounts[i];
     }
-    sendcounts[nprocs-1] = (HEIGHT * WIDTH) % (nprocs-1);
 
-
-    
     MPI_Datatype typesig[9] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
     int blocklen[9] = {1,1,1,1,1,1,1,1,1};
-    MPI_Aint displacements[9];
+    MPI_Aint displacements[9] = {
+        offsetof(surroundingPixels, current),
+        offsetof(surroundingPixels, topLeft),
+        offsetof(surroundingPixels, topMiddle),
+        offsetof(surroundingPixels, topRight),
+        offsetof(surroundingPixels, left),
+        offsetof(surroundingPixels, right),
+        offsetof(surroundingPixels, bottomLeft),
+        offsetof(surroundingPixels, bottomMiddle),
+        offsetof(surroundingPixels, bottomRight)
+    };
     MPI_Datatype MPI_SURROUNDING_PIXELS;
     MPI_Type_create_struct(9, blocklen, displacements, typesig, &MPI_SURROUNDING_PIXELS);
     MPI_Type_commit(&MPI_SURROUNDING_PIXELS);
 
-    MPI_Scatterv(pixelMesh,//check
-                 sendcounts,//check
-                 displs,//check
-                 MPI_SURROUNDING_PIXELS,//waiting on custom type
-                 recvbuf, //check
-                 recvcount,//check
-                 MPI_SURROUNDING_PIXELS,//waiting on custom type
-                 0,//check
-                 MPI_COMM_WORLD);//check
+    //printf("\n\nsendcounts: %d\tdispls %d\n\n", sendcounts[0], displs[0]);
 
     //SCATTER ALL PIXELS BETWEEN PROCESSES
-    surroundingPixels *subPixelMesh = malloc(sizeof(surroundingPixels) * pixelsPerProc);
-    MPI_Scatter(pixelMesh, totalPixelCount, MPI_FLOAT, subPixelMesh, pixelsPerProc, MPI_FLOAT, 0, MPI_COMM_WORLD);
+    surroundingPixels *subPixelMesh = malloc(sizeof(surroundingPixels) * recvcount);
+    MPI_Scatterv(pixelMesh,
+                 sendcounts,
+                 displs,
+                 MPI_SURROUNDING_PIXELS,
+                 subPixelMesh,
+                 recvcount,
+                 MPI_SURROUNDING_PIXELS,
+                 0,
+                 MPI_COMM_WORLD);
 
     //Run Cuda function (run Sobel on all pixels)
-    
-    size_t pixelsPerThread = 5;
-    float *out = runSobelOnPixels(pixelsPerThread, subPixelMesh, WIDTH, HEIGHT, rank);
-    
-    MPI_Barrier(MPI_COMM_WORLD);
-    
-    //GATHER ALL PIXELS
-    
-    //Write all calculated data to a new binary
-    MPI_Offset offset = 0;
+    //printf("rank: %d\tTEST\n", rank);
+    float *out = runSobelOnPixels((size_t)recvcount, subPixelMesh, WIDTH, HEIGHT, rank);
 
     MPI_Barrier(MPI_COMM_WORLD);
-    
+
+    //Write all calculated data to a new binary
+    MPI_Offset offset = (MPI_Offset)displs[rank] * (MPI_Offset)sizeof(float);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+
+    //Does not need MPI_Gather because each rank can write to the file on its own
     MPI_File_open(MPI_COMM_WORLD, outputFilename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &ofh);
-    
-    
-    for(int i = 0; i < pixelsPerProc; ++i)
-    {
-        offset = i;
-        //MPI_File_write_at(ofh, offset, out, 1, MPI_FLOAT, &status);
-        //printf("new: %lf", myPixels[i]);
-        //printf("%d\n", i);
-    }
+
+    MPI_File_write_at(ofh, offset, out, recvcount, MPI_FLOAT, &status);
 
     MPI_File_close(&ofh);
 
@@ -297,14 +286,18 @@ int main(int argc, char* argv[])
     if(rank == 0)
     {
         free(pixelMesh);
+        free(allPixels);
     }
-    
-    free(allPixels);
+
+    free(subPixelMesh);
+    free(sendcounts);
+    free(displs);
+    MPI_Type_free(&MPI_SURROUNDING_PIXELS);
     freeOutArray(out);
-    
+
     MPI_Barrier(MPI_COMM_WORLD);
-    
+
     MPI_Finalize();
     return 0;
-    
+
 }
