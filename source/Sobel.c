@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 
     //This is how many pixels each process will recieve except the last one
     if(nprocs == 1){//case to prevent divide by 0
-    const size_t pixelsPerProc = (HEIGHT * WIDTH)
+    const size_t pixelsPerProc = (HEIGHT * WIDTH);
     }
     else{
     const size_t pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
