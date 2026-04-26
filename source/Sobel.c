@@ -210,11 +210,14 @@ int main(int argc, char* argv[])
 
     //This is how many pixels each process will recieve except the last one
     size_t pixelsPerProc;
+    size_t recvcount;    
     if(nprocs == 1){//case to prevent divide by 0
     pixelsPerProc = (HEIGHT * WIDTH);
+    recvcount = (HEIGHT*WIDTH);
     }
     else{
     pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
+    recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
     }
     //SCATTER ALL PIXELS BETWEEN PROCESSES
     //last rank gets remainder, all others get evenly divided.
