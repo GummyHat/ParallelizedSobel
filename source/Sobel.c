@@ -209,6 +209,7 @@ int main(int argc, char* argv[])
     }
     size_t pixelsPerProc;
     size_t recvcount;    
+    
     if(nprocs == 1){//case to prevent divide by 0
     pixelsPerProc = (HEIGHT * WIDTH);
     recvcount = (HEIGHT*WIDTH);
@@ -224,8 +225,28 @@ int main(int argc, char* argv[])
     printf("%ld pixelsPerProc\n",pixelsPerProc);
     printf("%ld recvcount\n",recvcount);
     }
+        
+    surroundingPixels * recvbuf = malloc(sizeof(surroundingPixels)*recvcount);
+    int * sendcounts = malloc(sizeof(int)*nprocs);
+    int * displs = malloc(sizeof(int)*nprocs);
+    int sum = 0;
+    for(int i = 0; i < (nprocs-1); ++i){
+        sendcounts[i] = int(pixelsPerProc);
+        displs[i]= sum;
+        sum += sendcounts[i];
+    }
+    sendcounts[nprocs-1] = (HEIGHT * WIDTH) % (nprocs-1);
+    
     //SCATTER ALL PIXELS BETWEEN PROCESSES
-
+    MPI_Scatterv(pixelMesh,//check
+                 sendcounts,//check
+                 displs,//check
+                 customType,//heheeee he heee jigglypuff
+                 recvbuf, //check
+                 recvcount,//check
+                 customType,//hahah yeah sure check i guess
+                 0,//check
+                 MPI_COMM_WORLD);//check
     //Run Cuda function (run Sobel on all pixels)
     surroundingPixels *subPixelMesh = malloc(sizeof(surroundingPixels) * 3);
     size_t pixelsPerThread = 5;
