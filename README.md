@@ -7,11 +7,11 @@ This is a program that runs the Sobel boundary detection algorithm using MPI, MP
 
 Sobel.c contains all MPI code and the main function.
 Sobel.cu contains Cuda implementation.
-Pixel.h contains 2 datatypes that are used in both Sobel.c and Sobel.cu
+pixel.h contains 2 datatypes that are used in both Sobel.c and Sobel.cu
 
 There is a Makefile included that will compile all 3 of these files into a simple binary.
 
-There are also 4 sbatch scripts that cummulatively test strong and weak scaling using the BlackMarble 2016 photograph.
+There are also 4 sbatch scripts that cumulatively test strong and weak scaling using the BlackMarble 2016 photograph.
 
 The photograph used for testing can be found here: https://svs.gsfc.nasa.gov/30876
 
@@ -35,19 +35,33 @@ To view your output file GIMP is again recommended. It will ask for various spec
 It is also recommended to go into GIMP color>Auto>Stretch Contrast for better viewing
 
 These are all testing scenarios present within the sbatch scripts.
-Strong Scaling:
+
+##Strong Scaling:
+
 BlackMarble_2016_C1_18432x18432 1 ranks 1 node
+
 BlackMarble_2016_C1_18432x18432 2 ranks 1 node
+
 BlackMarble_2016_C1_18432x18432 4 ranks 1 node
+
 BlackMarble_2016_C1_18432x18432 8 ranks 2 nodes
+
 BlackMarble_2016_C1_18432x18432 16 ranks 3 nodes
+
 BlackMarble_2016_C1_18432x18432 32 ranks 6 nodes
 
-Weak Scaling
+
+##Weak Scaling:
+
 BlackMarble_2016_Full_11585x11585 1 ranks 1 node
+
 BlackMarble_2016_Full_16384x16384 2 ranks 1 node
+
 BlackMarble_2016_Full_23170x23170 4 ranks 1 node
+
 BlackMarble_2016_Full_32768x32768 8 ranks 2 nodes
+
 BlackMarble_2016_Full_46341x46341 16 ranks 3 nodes
+
 BlackMarble_2016_Full_65536x65536 32 ranks 6 nodes
 
