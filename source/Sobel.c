@@ -283,6 +283,10 @@ int main(int argc, char* argv[])
         cuda_start = getticks();
     }
     float *out = runSobelOnPixels((size_t)recvcount, subPixelMesh, WIDTH, HEIGHT, rank);
+    if(rank == 0)
+    {
+        cuda_finish = getticks();
+    }
 
     MPI_Barrier(MPI_COMM_WORLD);
 
