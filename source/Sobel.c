@@ -207,50 +207,66 @@ int main(int argc, char* argv[])
             }
         }
     }
+
+    //This is how many pixels each process will recieve
     size_t pixelsPerProc;
-    size_t recvcount;    
-    
-    if(nprocs == 1){//case to prevent divide by 0
-    pixelsPerProc = (HEIGHT * WIDTH);
-    recvcount = (HEIGHT*WIDTH);
-    //test prints
-    printf("%ld pixelsPerProc\n",pixelsPerProc);
-    printf("%ld recvcount\n",recvcount);
+    size_t recvcount;
+
+    if(nprocs == 1)
+    { //case to prevent divide by 0
+        pixelsPerProc = (HEIGHT * WIDTH);
+        recvcount = (HEIGHT*WIDTH);
+        //test prints
+        printf("%ld pixelsPerProc\n",pixelsPerProc);
+        printf("%ld recvcount\n",recvcount);
     }
-    else{
-    pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
-    recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
-    
-    //test prints
-    printf("%ld pixelsPerProc\n",pixelsPerProc);
-    printf("%ld recvcount\n",recvcount);
-    }
+    else
+    {
+        pixelsPerProc = (HEIGHT * WIDTH) / (nprocs-1);
+        recvcount = (rank == (nprocs-1)) ? (HEIGHT * WIDTH) % (nprocs-1) : pixelsPerProc;
         
+        //test prints
+        printf("%ld pixelsPerProc\n",pixelsPerProc);
+        printf("%ld recvcount\n",recvcount);
+    }
+
     surroundingPixels * recvbuf = malloc(sizeof(surroundingPixels)*recvcount);
     int * sendcounts = malloc(sizeof(int)*nprocs);
     int * displs = malloc(sizeof(int)*nprocs);
     int sum = 0;
     for(int i = 0; i < (nprocs-1); ++i){
-        sendcounts[i] = int(pixelsPerProc);
+        sendcounts[i] = (int) pixelsPerProc;
         displs[i]= sum;
         sum += sendcounts[i];
     }
     sendcounts[nprocs-1] = (HEIGHT * WIDTH) % (nprocs-1);
+
+
     
-    //SCATTER ALL PIXELS BETWEEN PROCESSES
+    MPI_Datatype typesig[9] = {MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT, MPI_FLOAT};
+    int blocklen[9] = {1,1,1,1,1,1,1,1,1};
+    MPI_Aint displacements[9];
+    MPI_Datatype MPI_SURROUNDING_PIXELS;
+    MPI_Type_create_struct(9, blocklen, displacements, typesig, &MPI_SURROUNDING_PIXELS);
+    MPI_Type_commit(&MPI_SURROUNDING_PIXELS);
+
     MPI_Scatterv(pixelMesh,//check
                  sendcounts,//check
                  displs,//check
-                 customType,//waiting on custom type
+                 MPI_SURROUNDING_PIXELS,//waiting on custom type
                  recvbuf, //check
                  recvcount,//check
-                 customType,//waiting on custom type
+                 MPI_SURROUNDING_PIXELS,//waiting on custom type
                  0,//check
                  MPI_COMM_WORLD);//check
-    //Run Cuda function (run Sobel on all pixels)
-    surroundingPixels *subPixelMesh = malloc(sizeof(surroundingPixels) * 3);
-    size_t pixelsPerThread = 5;
 
+    //SCATTER ALL PIXELS BETWEEN PROCESSES
+    surroundingPixels *subPixelMesh = malloc(sizeof(surroundingPixels) * pixelsPerProc);
+    MPI_Scatter(pixelMesh, totalPixelCount, MPI_FLOAT, subPixelMesh, pixelsPerProc, MPI_FLOAT, 0, MPI_COMM_WORLD);
+
+    //Run Cuda function (run Sobel on all pixels)
+    
+    size_t pixelsPerThread = 5;
     float *out = runSobelOnPixels(pixelsPerThread, subPixelMesh, WIDTH, HEIGHT, rank);
     
     MPI_Barrier(MPI_COMM_WORLD);
@@ -264,7 +280,7 @@ int main(int argc, char* argv[])
     
     MPI_File_open(MPI_COMM_WORLD, outputFilename, MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &ofh);
     
-    /*
+    
     for(int i = 0; i < pixelsPerProc; ++i)
     {
         offset = i;
@@ -272,7 +288,7 @@ int main(int argc, char* argv[])
         //printf("new: %lf", myPixels[i]);
         //printf("%d\n", i);
     }
-    */
+
     MPI_File_close(&ofh);
 
     MPI_Barrier(MPI_COMM_WORLD);
