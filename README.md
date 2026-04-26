@@ -8,6 +8,12 @@ This is a repository containing code for a parallelized Sobel algorithm that uti
     <img src="BlackMarble_2016_C1_18432x18432_1rank_1node_out.png" alt="Output" width="45%">                                                                                                                                               
 </p>
 
+<p align="center">
+    <img src="green_creature_input.png" alt="Input" width="45%">                                                                                                                  
+    <img src="green_creature_output.png" alt="Output" width="45%">                                                                                                                                               
+</p>
+
+
 This is a program that runs the Sobel boundary detection algorithm using MPI, MPI_IO, and CUDA functions.
 
 
