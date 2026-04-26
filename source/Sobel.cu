@@ -1,12 +1,14 @@
+#include <cmath>
 #include <cstddef>
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
+//#include <math.h>
 #include "pixel.h"
 
 extern "C"
 {
-    pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pixel *leftRow, pixel *rightRow, const size_t LENGTH, const int rank);
+    float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank);
     void freeOutArray(pixel *pointer)
     {
         cudaFree(pointer);
@@ -15,56 +17,53 @@ extern "C"
 
 // CUDA kernal to perform Sobel calulation on each pixel
 __global__
-void sobelKernal(const size_t pixelsToCalcPerThread, pixel *currRow, pixel *leftRow, pixel *rightRow, pixel *out)
+void sobelKernal(const size_t pixelsPerThread, surroundingPixels *in, float* out)
 {
     int index = blockIdx.x * blockDim.x + threadIdx.x;
     int stride = blockDim.x * gridDim.x;
-    for(int i = index; i < pixelsToCalcPerThread; i += stride)
+    for(int i = index; i < pixelsPerThread; i += stride)
     {
-        //Put Sobel Logic Here
+        //Sobel Logic Here
+        float Gx = (-1 * in->topLeft) + (1 * in->topLeft) + (-2 * in->left) +
+                        (2 * in->right) + (-1 * in->bottomLeft) + (1 * in->bottomRight);
+        float Gy = (-1 * in->topLeft) + (-2 * in->topMiddle) + (-1 * in->topRight) +
+                        (1 * in->bottomLeft) + (2 * in->bottomMiddle) + (1 * in->bottomRight);
+        float GxPow = std::pow(Gx, 2);
+        float GyPow = std::pow(Gy, 2);
+        float magnitude = std::sqrt(GxPow + GyPow);
+        out[i] = magnitude;
     }
 }
 
 
-pixel* runSobelOnPixels(const size_t pixelsToCalcPerThread, pixel *myPixels, pixel *leftRow, pixel *rightRow, const size_t LENGTH, const int rank)
+float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank)
 {
     int NumDevices;
     cudaGetDeviceCount(&NumDevices);
     int Device = rank % NumDevices;
     cudaSetDevice(Device);
 
-    pixel *leftRowCuda;
-    pixel *rightRowCuda;
-    pixel *currRowCuda;
-    pixel *out;
+    surroundingPixels *in;
+    float *out;
 
-    cudaMallocManaged(&leftRowCuda, sizeof(pixel) * LENGTH);
-    cudaMallocManaged(&rightRowCuda, sizeof(pixel) * LENGTH);
-    cudaMallocManaged(&currRowCuda, sizeof(pixel) * LENGTH);
-    cudaMallocManaged(&out, sizeof(pixel) * LENGTH);
+    cudaMallocManaged(&in, sizeof(surroundingPixels) * WIDTH);
+    cudaMallocManaged(&out, sizeof(surroundingPixels) * WIDTH);
 
-    //Copy arrays into Cuda memory (unsure if this is wise)
-    for(int i = 0; i < LENGTH; ++i)
+    //Copy in arraya into Cuda memory
+    for(int i = 0; i < WIDTH; ++i)
     {
-        leftRowCuda[i] = leftRow[i];
-        rightRowCuda[i] = rightRow[i];
-        currRowCuda[i] = myPixels[i];
+        in[i] = myPixels[i];
     }
 
-    //cudaMemPrefetchAsync(leftRowCuda, sizeof(pixel) * LENGTH, Device, 0);
-    //cudaMemPrefetchAsync(rightRowCuda, sizeof(pixel) * LENGTH, Device, 0);
-    //cudaMemPrefetchAsync(currRowCuda, sizeof(pixel) * LENGTH, Device, 0);
-    //cudaMemPrefetchAsync(out, sizeof(pixel) * LENGTH, Device, 0);
+    //cudaMemPrefetchAsync(in, sizeof(surroundingPixels) * LENGTH, Device, 0);
+    //cudaMemPrefetchAsync(out, sizeof(float) * WIDTH, Device, 0);
 
-    //const dim3 gridDim = 16384; //These numbers are a bit arbitrary
-    //const dim3 blockDim = 1024;
-    //sobelKernal<<<gridDim,blockDim>>>(pixelsToCalcPerThread, currRowCuda, leftRowCuda, rightRowCuda, out);
+    const dim3 gridDim = 16384; //These numbers are a bit arbitrary
+    const dim3 blockDim = 1024;
+    sobelKernal<<<gridDim,blockDim>>>(pixelsPerThread, in, out);
 
     cudaDeviceSynchronize();
 
-    cudaFree(leftRowCuda);
-    cudaFree(rightRowCuda);
-    cudaFree(currRowCuda);
-    out = currRowCuda; //TEMPORARY FOR TESTING
+    cudaFree(in);
     return out;
 }
