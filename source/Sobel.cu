@@ -3,13 +3,12 @@
 #include <stdio.h>
 #include <cuda.h>
 #include <cuda_runtime.h>
-//#include <math.h>
 #include "pixel.h"
 
 extern "C"
 {
     float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixels, const size_t WIDTH, const size_t HEIGHT, const int rank);
-    void freeOutArray(pixel *pointer)
+    void freeOutArray(float *pointer)
     {
         cudaFree(pointer);
     }
@@ -58,8 +57,8 @@ float* runSobelOnPixels(const size_t pixelsPerThread, surroundingPixels *myPixel
     //cudaMemPrefetchAsync(in, sizeof(surroundingPixels) * LENGTH, Device, 0);
     //cudaMemPrefetchAsync(out, sizeof(float) * WIDTH, Device, 0);
 
-    const dim3 gridDim = 16384; //These numbers are a bit arbitrary
-    const dim3 blockDim = 1024;
+    const dim3 gridDim = 2; //These numbers are a bit arbitrary
+    const dim3 blockDim = 2;
     sobelKernal<<<gridDim,blockDim>>>(pixelsPerThread, in, out);
 
     cudaDeviceSynchronize();
