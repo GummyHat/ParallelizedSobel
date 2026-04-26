@@ -33,7 +33,7 @@ The files used for testing are much too large for upload to GitHub, but output i
 
 mpirun -np RANKS ./Sobel-mpi-multi-gpu WIDTH HEIGHT input-filename output-filename
 
-Be wary that only square photographs can be used, and must be in a .data (byte) format.
+Be wary that photographs must be in a .data (byte) format.
 
 Use an RGB file where each color value is a byte and ordered contiguously. GIMP is recommended for this, but not entirely necessary.
 
