@@ -241,10 +241,10 @@ int main(int argc, char* argv[])
     MPI_Scatterv(pixelMesh,//check
                  sendcounts,//check
                  displs,//check
-                 customType,//heheeee he heee jigglypuff
+                 customType,//waiting on custom type
                  recvbuf, //check
                  recvcount,//check
-                 customType,//hahah yeah sure check i guess
+                 customType,//waiting on custom type
                  0,//check
                  MPI_COMM_WORLD);//check
     //Run Cuda function (run Sobel on all pixels)
